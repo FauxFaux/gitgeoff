@@ -8,6 +8,8 @@ mod cache;
 mod github;
 
 fn main() -> Result<(), Error> {
+    pretty_env_logger::init();
+
     let token = env::var("GH_TOKEN").with_context(|_| err_msg("reading GH_TOKEN from env"))?;
 
     let cache = cache::Cache::new()?;
