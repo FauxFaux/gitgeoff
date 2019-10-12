@@ -16,7 +16,16 @@ impl Cache {
     }
 
     pub fn meta_github_org(&self, org: &str) -> Result<PathBuf, Error> {
-        mkdirs(self.root.join("github").join(fs_safe_component(org)))
+        mkdirs(self.root.join("meta/github").join(fs_safe_component(org)))
+    }
+
+    pub fn repo_bare(&self, org: &str, repo: &str) -> Result<PathBuf, Error> {
+        mkdirs(
+            self.root
+                .join("repos")
+                .join(fs_safe_component(org))
+                .join(format!("{}.git", fs_safe_component(repo))),
+        )
     }
 }
 
@@ -49,5 +58,6 @@ fn from_env() -> Result<PathBuf, Error> {
 }
 
 fn fs_safe_component(path: &str) -> String {
-    path.replace(|c: char| !c.is_alphanumeric(), "_")
+    path.replace(|c: char| !(c.is_alphanumeric() || c == '-'), "_")
+        .to_ascii_lowercase()
 }

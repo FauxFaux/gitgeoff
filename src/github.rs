@@ -63,3 +63,48 @@ fn next_page(resp: &reqwest::Response) -> Result<Option<Url>, Error> {
         None => Ok(None),
     }
 }
+
+type IsoDate = chrono::DateTime<chrono::Utc>;
+
+#[derive(serde_derive::Deserialize, Clone)]
+pub(crate) struct Repo {
+    pub id: u64,
+    pub name: String,
+    pub full_name: String,
+    pub private: bool,
+    pub owner: Value,
+    pub description: Option<String>,
+    pub fork: bool,
+
+    pub ssh_url: String,
+
+    pub created_at: IsoDate,
+    pub updated_at: IsoDate,
+    pub pushed_at: IsoDate,
+
+    // ??
+    pub size: u64,
+
+    pub stargazers_count: u64,
+    pub watchers_count: u64,
+
+    pub has_issues: bool,
+    pub open_issues_count: u64,
+    pub open_issues: u64,
+    pub forks_count: u64,
+
+    pub archived: bool,
+    pub disabled: bool,
+
+    // master
+    pub default_branch: String,
+
+    pub permissions: Permissions,
+}
+
+#[derive(serde_derive::Deserialize, Clone)]
+pub struct Permissions {
+    pub admin: bool,
+    pub push: bool,
+    pub pull: bool,
+}
