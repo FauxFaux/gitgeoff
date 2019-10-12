@@ -1,11 +1,20 @@
 use std::str::FromStr;
 
 use failure::bail;
+use failure::err_msg;
 use failure::Error;
 use hyperx::header::{Header, RelationType};
 use reqwest::Method;
 use serde_json::Value;
 use url::Url;
+
+pub fn flatten(pages: Vec<Value>) -> Result<Vec<Value>, Error> {
+    let mut ret = Vec::with_capacity(100);
+    for page in pages {
+        ret.extend_from_slice(page.as_array().ok_or_else(|| err_msg("page wasn't list"))?);
+    }
+    Ok(ret)
+}
 
 pub fn all_pages(base_url: &str, token: &str) -> Result<Vec<Value>, Error> {
     let client = reqwest::Client::new();

@@ -1,13 +1,17 @@
 use std::env;
+use std::path;
 
 use failure::err_msg;
 use failure::Error;
 use failure::ResultExt;
 
+mod cache;
 mod github;
 
 fn main() -> Result<(), Error> {
     let token = env::var("GH_TOKEN").with_context(|_| err_msg("reading GH_TOKEN from env"))?;
+
+    let cache = cache::pick()?;
 
     use clap::Arg;
     let matches = clap::App::new(clap::crate_name!())
@@ -20,17 +24,24 @@ fn main() -> Result<(), Error> {
         )
         .get_matches();
 
+    let org = matches.value_of("org").unwrap();
+
     let repos = github::all_pages(
-        &format!(
-            "https://api.github.com/orgs/{}/repos",
-            matches.value_of("org").unwrap()
-        ),
+        &format!("https://api.github.com/orgs/{}/repos", org),
         &token,
     )?;
 
-    for repo in repos {
-        println!("{:?}", repo);
-    }
+    let repos = github::flatten(repos)?;
+
+    let repos_json = cache.join(
+        path::Path::new("github")
+            .join(cache::fs_safe_component(org))
+            .join("repos.json"),
+    );
+
+    let mut temp = tempfile_fast::Sponge::new_for(repos_json)?;
+    serde_json::to_writer(&mut temp, &repos)?;
+    temp.commit()?;
 
     Ok(())
 }

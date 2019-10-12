@@ -6,9 +6,10 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33"
-dirs = "2.0"
+directories = "2.0"
 failure = "0.1"
 hyperx = "0.15"
 reqwest = "0.9"
 serde_json = "1"
+tempfile-fast = { git = "https://github.com/FauxFaux/tempfile-fast-rs"}
 url = "1"
