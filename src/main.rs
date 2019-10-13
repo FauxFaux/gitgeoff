@@ -62,7 +62,7 @@ fn main() -> Result<(), Error> {
                 }
                 let dest = cache.repo_bare(org, &repo.name)?;
                 let src = &repo.ssh_url;
-                git::fetch_to(src, &dest)
+                git::clone_or_fetch(src, &dest)
                     .with_context(|_| format_err!("ensure {:?} -> {:?}", src, dest))?;
             }
         }
