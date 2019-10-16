@@ -12,6 +12,20 @@ fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
     }
 }
 
+pub fn status(dest: &Path) -> Result<bool, Error> {
+    let repo = git2::Repository::open(dest)?;
+    let mut dirty = false;
+    for status in repo
+        .statuses(None)?
+        .iter()
+        .filter(|status| !status.status().is_ignored())
+    {
+        println!("{:?}: {:?}: {:?}", dest, status.status(), status.path());
+        dirty = true;
+    }
+    Ok(dirty)
+}
+
 pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
     let repo = match if_found(git2::Repository::open_bare(&dest))? {
         Some(repository) => repository,

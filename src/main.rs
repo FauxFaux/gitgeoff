@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 
 use failure::err_msg;
@@ -43,27 +44,40 @@ fn main() -> Result<(), Error> {
 
     match matches.subcommand() {
         ("status", _args) => {
-            let repos = config::load()?;
-
-            let mut work = Vec::with_capacity(repos.len());
-
-            for repo in repos {
-                let src = repo.url;
-                let dest = src
-                    .path_segments()
-                    .ok_or_else(|| err_msg("empty url"))?
-                    .last()
-                    .ok_or_else(|| err_msg("empty path in url"))?;
-
-                work.push((src.as_str().to_string(), PathBuf::from(dest)));
+            #[derive(PartialEq, Eq, Copy, Clone)]
+            enum Status {
+                Absent,
+                Changes,
+                Clean,
             }
-
-            work.into_par_iter()
-                .map(|(src, dest)| {
-                    git::clone_or_fetch(&src, &dest)
-                        .with_context(|_| format_err!("ensure {:?} -> {:?}", src, dest))
+            let status = config::load()?
+                .into_par_iter()
+                .map(|spec| -> Result<_, Error> {
+                    let dest = spec.local_dir()?;
+                    let dest = Path::new(dest);
+                    if !dest.exists() {
+                        return Ok(Status::Absent);
+                    }
+                    if git::status(dest)? {
+                        Ok(Status::Changes)
+                    } else {
+                        Ok(Status::Clean)
+                    }
                 })
-                .collect::<Result<Vec<_>, _>>()?;
+                .collect::<Result<Vec<Status>, _>>()?;
+
+            println!(
+                "{} changed, {} absent, {} clean",
+                status.iter().filter(|&&e| e == Status::Changes).count(),
+                status.iter().filter(|&&e| e == Status::Absent).count(),
+                status.iter().filter(|&&e| e == Status::Clean).count(),
+            );
+        }
+        ("update", _args) =>
+        {
+            #[cfg(never)]
+            git::clone_or_fetch(&src, &dest)
+                .with_context(|_| format_err!("ensure {:?} -> {:?}", src, dest))
         }
         (_, _) => unreachable!("subcommand required"),
     }
