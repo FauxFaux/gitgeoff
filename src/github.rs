@@ -108,3 +108,20 @@ pub struct Permissions {
     pub push: bool,
     pub pull: bool,
 }
+
+pub fn write_github(token: &String, cache: super::cache::Cache, org: &&str) -> Result<(), Error> {
+    let repos = all_pages(
+        &format!("https://api.github.com/orgs/{}/repos", org),
+        &token,
+    )?;
+
+    let repos = flatten(repos)?;
+
+    let repos_json = cache.meta_github_org(org)?.join("repos.json");
+
+    let mut temp = tempfile_fast::Sponge::new_for(repos_json)?;
+    serde_json::to_writer(&mut temp, &repos)?;
+    temp.commit()?;
+
+    Ok(())
+}

@@ -23,7 +23,7 @@ pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
         None => repo.remote("origin", url)?,
     };
 
-    if_found(repo.config()?.remove("remote.origin.fetch"))?;
+    if_found(repo.config()?.remove_multivar("remote.origin.fetch", ".*"))?;
     repo.remote_add_fetch("origin", "+refs/heads/*:refs/heads/*")?;
 
     let mut cb = git2::RemoteCallbacks::new();
