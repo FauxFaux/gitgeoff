@@ -13,8 +13,7 @@ fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
     }
 }
 
-pub fn first_statuses(dest: &Path) -> Result<Vec<String>, Error> {
-    let repo = git2::Repository::open(dest)?;
+pub fn first_statuses(repo: &git2::Repository) -> Result<Vec<String>, Error> {
     let mut dirty = false;
     let statuses = repo.statuses(None)?;
     Ok(statuses
@@ -37,6 +36,16 @@ pub fn first_statuses(dest: &Path) -> Result<Vec<String>, Error> {
             )
         })
         .collect())
+}
+
+pub fn variance_from_origin_head(repo: &git2::Repository) -> Result<usize, Error> {
+    let local = repo.revparse_single("HEAD")?.id();
+    let remote = repo.revparse_single("origin/REMOTE_HEAD")?.id();
+    Ok(if local != remote {
+        1
+    } else {
+        0
+    })
 }
 
 pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
