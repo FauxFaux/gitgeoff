@@ -18,6 +18,8 @@ mod git;
 mod github;
 
 use cache::Cache;
+use config::Spec;
+use std::collections::HashMap;
 
 fn main() -> Result<(), Error> {
     pretty_env_logger::formatted_builder()
@@ -44,34 +46,66 @@ fn main() -> Result<(), Error> {
 
     match matches.subcommand() {
         ("status", _args) => {
-            #[derive(PartialEq, Eq, Copy, Clone)]
+            #[derive(PartialEq, Eq, Clone, Debug)]
             enum Status {
                 Absent,
-                Changes,
+                Changes(Vec<String>),
                 Clean,
             }
-            let status = config::load()?
+            let status: Vec<(Spec, Status)> = config::load()?
                 .into_par_iter()
                 .map(|spec| -> Result<_, Error> {
                     let dest = spec.local_dir()?;
                     let dest = Path::new(dest);
                     if !dest.exists() {
-                        return Ok(Status::Absent);
+                        return Ok((spec, Status::Absent));
                     }
-                    if git::status(dest)? {
-                        Ok(Status::Changes)
+                    let some_statuses = git::first_statuses(dest)?;
+                    if !some_statuses.is_empty() {
+                        Ok((spec, Status::Changes(some_statuses)))
                     } else {
-                        Ok(Status::Clean)
+                        Ok((spec, Status::Clean))
                     }
                 })
-                .collect::<Result<Vec<Status>, _>>()?;
+                .collect::<Result<_, _>>()?;
 
             println!(
-                "{} changed, {} absent, {} clean",
-                status.iter().filter(|&&e| e == Status::Changes).count(),
-                status.iter().filter(|&&e| e == Status::Absent).count(),
-                status.iter().filter(|&&e| e == Status::Clean).count(),
+                "absent: {}",
+                status
+                    .iter()
+                    .filter_map(|(spec, status)| match status {
+                        Status::Absent => spec.local_dir().ok(),
+                        _ => None,
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(", ")
             );
+
+            println!(
+                "clean: {}",
+                status
+                    .iter()
+                    .filter_map(|(spec, status)| match status {
+                        Status::Clean => spec.local_dir().ok(),
+                        _ => None,
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(", ")
+            );
+
+            for (spec, stat) in status {
+                let changes = match stat {
+                    Status::Changes(changes) => changes,
+                    _ => continue,
+                };
+                let suffix = if changes.len() > 2 { ", ..." } else { "" };
+                println!(
+                    "{}: {}{}",
+                    spec.local_dir()?,
+                    changes.into_iter().take(2).collect::<Vec<_>>().join(", "),
+                    suffix
+                );
+            }
         }
         ("update", _args) =>
         {

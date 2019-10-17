@@ -17,3 +17,6 @@ serde_derive = "1"
 serde_json = "1"
 tempfile-fast = { git = "https://github.com/FauxFaux/tempfile-fast-rs"}
 url = "2"
+
+[profile.release]
+lto = true

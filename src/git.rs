@@ -2,6 +2,7 @@ use std::path::Path;
 
 use failure::Error;
 use failure::ResultExt;
+use git2::Status;
 use log::info;
 
 fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
@@ -12,18 +13,30 @@ fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
     }
 }
 
-pub fn status(dest: &Path) -> Result<bool, Error> {
+pub fn first_statuses(dest: &Path) -> Result<Vec<String>, Error> {
     let repo = git2::Repository::open(dest)?;
     let mut dirty = false;
-    for status in repo
-        .statuses(None)?
+    let statuses = repo.statuses(None)?;
+    Ok(statuses
         .iter()
         .filter(|status| !status.status().is_ignored())
-    {
-        println!("{:?}: {:?}: {:?}", dest, status.status(), status.path());
-        dirty = true;
-    }
-    Ok(dirty)
+        .take(3)
+        .map(|status| {
+            format!(
+                "{} {:?}",
+                match status.status() {
+                    Status::INDEX_NEW => "add".to_string(),
+                    Status::WT_NEW => "new".to_string(),
+                    Status::INDEX_MODIFIED | Status::WT_MODIFIED => "mod".to_string(),
+                    Status::INDEX_DELETED | Status::WT_DELETED => "del".to_string(),
+                    Status::INDEX_RENAMED | Status::WT_RENAMED => "mov".to_string(),
+                    Status::CONFLICTED => "CON".to_string(),
+                    other => format!("?{:?}?", other),
+                },
+                status.path().unwrap_or("?")
+            )
+        })
+        .collect())
 }
 
 pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
