@@ -49,7 +49,7 @@ fn main() -> Result<(), Error> {
             #[derive(PartialEq, Eq, Clone, Debug)]
             enum Status {
                 Absent,
-                Changes(Vec<String>, usize),
+                Changes(Vec<String>, git::Variance),
                 Clean,
             }
             let status: Vec<(Spec, Status)> = config::load()?
@@ -63,7 +63,7 @@ fn main() -> Result<(), Error> {
                     let repo = git2::Repository::open(dest)?;
                     let variance = git::variance_from_origin_head(&repo)?;
                     let some_statuses = git::first_statuses(&repo)?;
-                    if !some_statuses.is_empty() || variance != 0 {
+                    if !some_statuses.is_empty() || variance != git::Variance::Equal {
                         Ok((spec, Status::Changes(some_statuses, variance)))
                     } else {
                         Ok((spec, Status::Clean))
@@ -102,7 +102,7 @@ fn main() -> Result<(), Error> {
                 };
                 let suffix = if changes.len() > 2 { ", ..." } else { "" };
                 println!(
-                    "{}: ({}) {}{}",
+                    "{}: ({:?}) {}{}",
                     spec.local_dir()?,
                     variance,
                     changes.into_iter().take(2).collect::<Vec<_>>().join(", "),
