@@ -2,9 +2,10 @@ use std::path::Path;
 
 use failure::Error;
 use failure::ResultExt;
-use git2::Oid;
 use git2::Repository;
 use git2::Status;
+use git2::Oid;
+use git2::Remote;
 use log::info;
 
 fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
@@ -98,6 +99,33 @@ pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
     if_found(repo.config()?.remove_multivar("remote.origin.fetch", ".*"))?;
     repo.remote_add_fetch("origin", "+refs/heads/*:refs/heads/*")?;
 
+    info!("fetching {:?} -> {:?}", url, dest);
+    do_fetch(&repo, &mut origin, |p| {
+        info!("{:?}: {:?}", dest, p);
+    })?;
+
+    Ok(())
+}
+
+pub fn fetch_origin_default(repo: &Repository) -> Result<(), Error> {
+    let mut origin = repo.find_remote("origin")?;
+    do_fetch(&repo, &mut origin, |p| {
+        info!("{:?}", p);
+    })?;
+    Ok(())
+}
+
+#[derive(Debug)]
+enum Progress {
+    Sideband(String),
+    Transfer([usize; 7]),
+}
+
+fn do_fetch<F: Fn(Progress)>(
+    repo: &Repository,
+    origin: &mut Remote,
+    progress: F,
+) -> Result<(), Error> {
     let mut cb = git2::RemoteCallbacks::new();
     cb.credentials(|_, _, _| {
         // TODO: do we need to parse this out of the URL, or have it as config?
@@ -106,31 +134,28 @@ pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
 
     // text from the remote, e.g. "counting objects"
     cb.sideband_progress(|message| {
-        info!("{:?}: {:?}", dest, String::from_utf8_lossy(message));
+        progress(Progress::Sideband(
+            String::from_utf8_lossy(message).to_string(),
+        ));
         true
     });
 
-    cb.transfer_progress(|progress| {
-        info!(
-            "{:?}: {:?}",
-            dest,
-            [
-                progress.indexed_deltas(),
-                progress.indexed_objects(),
-                progress.total_objects(),
-                progress.received_bytes(),
-                progress.received_objects(),
-                progress.local_objects(),
-                progress.total_deltas(),
-            ]
-        );
+    cb.transfer_progress(|counts| {
+        progress(Progress::Transfer([
+            counts.local_objects(),
+            counts.received_objects(),
+            counts.indexed_objects(),
+            counts.total_objects(),
+            counts.indexed_deltas(),
+            counts.total_deltas(),
+            counts.received_bytes(),
+        ]));
         true
     });
 
     let mut options = git2::FetchOptions::default();
     options.remote_callbacks(cb);
 
-    info!("fetching {:?} -> {:?}", url, dest);
     origin
         .fetch(&[], Some(&mut options), None)
         .with_context(|_| "fetching")?;

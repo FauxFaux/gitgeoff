@@ -19,7 +19,6 @@ mod github;
 
 use cache::Cache;
 use config::Spec;
-use std::collections::HashMap;
 
 fn main() -> Result<(), Error> {
     pretty_env_logger::formatted_builder()
@@ -40,12 +39,14 @@ fn main() -> Result<(), Error> {
                 .multiple(true)
                 .takes_value(true),
         )
-        .subcommand(SubCommand::with_name("status"))
+        .subcommand(
+            SubCommand::with_name("status").arg(Arg::with_name("update").long("update").short("u")),
+        )
         .setting(clap::AppSettings::SubcommandRequired)
         .get_matches();
 
     match matches.subcommand() {
-        ("status", _args) => {
+        ("status", Some(args)) => {
             #[derive(PartialEq, Eq, Clone, Debug)]
             enum Status {
                 Absent,
@@ -61,6 +62,9 @@ fn main() -> Result<(), Error> {
                         return Ok((spec, Status::Absent));
                     }
                     let repo = git2::Repository::open(dest)?;
+                    if args.is_present("update") {
+                        git::fetch_origin_default(&repo)?;
+                    }
                     let variance = git::variance_from_origin_head(&repo)?;
                     let some_statuses = git::first_statuses(&repo)?;
                     if !some_statuses.is_empty() || variance != git::Variance::Equal {
