@@ -2,10 +2,10 @@ use std::path::Path;
 
 use failure::Error;
 use failure::ResultExt;
-use git2::Repository;
-use git2::Status;
 use git2::Oid;
 use git2::Remote;
+use git2::Repository;
+use git2::Status;
 use log::info;
 
 fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
