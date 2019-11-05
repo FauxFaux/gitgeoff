@@ -1,6 +1,8 @@
 use std::path::Path;
 
+use failure::format_err;
 use failure::Error;
+use failure::ResultExt;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
@@ -28,13 +30,9 @@ pub fn status(update: bool) -> Result<(), Error> {
             if update {
                 git::fetch_origin_default(&repo)?;
             }
-            let variance = git::variance_from_origin_head(&repo)?;
-            let some_statuses = git::first_statuses(&repo)?;
-            if !some_statuses.is_empty() || variance != git::Variance::Equal {
-                Ok((spec, Status::Changes(some_statuses, variance)))
-            } else {
-                Ok((spec, Status::Clean))
-            }
+            let status = find_variance(&repo)
+                .with_context(|_| format_err!("finding status of {:?}", dest))?;
+            Ok((spec, status))
         })
         .collect::<Result<_, _>>()?;
 
@@ -78,4 +76,16 @@ pub fn status(update: bool) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+fn find_variance(repo: &git2::Repository) -> Result<Status, Error> {
+    let variance = git::variance_from_origin_head(&repo)?;
+    let some_statuses = git::first_statuses(&repo)?;
+    Ok(
+        if !some_statuses.is_empty() || variance != git::Variance::Equal {
+            Status::Changes(some_statuses, variance)
+        } else {
+            Status::Clean
+        },
+    )
 }
