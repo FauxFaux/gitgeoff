@@ -1,6 +1,10 @@
 use std::path::Path;
 
 use failure::Error;
+use grep_matcher::Matcher;
+use grep_regex::RegexMatcher;
+use grep_searcher::sinks::UTF8;
+use grep_searcher::Searcher;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
@@ -11,12 +15,12 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
     config::load()?
         .into_par_iter()
         .map(|s: Spec| -> Result<(), Error> {
-            let dest = Path::new(s.local_dir()?);
-            if !dest.exists() {
+            let dest = s.local_dir()?;
+            if !Path::new(dest).exists() {
                 return Ok(());
             }
             let repo = git2::Repository::open(dest)?;
-            grep_in(pattern, &format!("{:?}", dest), &repo)?;
+            grep_in(pattern, dest, &repo)?;
             Ok(())
         })
         .collect::<Result<_, _>>()?;
@@ -24,7 +28,10 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
 }
 
 fn grep_in(pattern: &str, prefix: &str, repo: &git2::Repository) -> Result<(), Error> {
+    let matcher = RegexMatcher::new(pattern)?;
     let tree_obj = repo.revparse_single("origin/REMOTE_HEAD")?.peel_to_tree()?;
+    let mut err = Vec::new();
+
     tree_obj.walk(git2::TreeWalkMode::PostOrder, |dir, entry| {
         match entry.kind() {
             Some(git2::ObjectType::Blob) => (),
@@ -34,11 +41,34 @@ fn grep_in(pattern: &str, prefix: &str, repo: &git2::Repository) -> Result<(), E
 
         let content = object.as_blob().expect("type checked above").content();
 
-        if twoway::find_bytes(content, pattern.as_bytes()).is_some() {
-            println!("{:?} {:?} {:?}", prefix, dir, entry.name());
+        let status = Searcher::new().search_slice(
+            &matcher,
+            content,
+            UTF8(|lnum, line| {
+                println!(
+                    "{}/{}{}:{}: {}",
+                    prefix,
+                    dir,
+                    entry.name().expect("blobs have names"),
+                    lnum,
+                    line.trim_end()
+                );
+                Ok(true)
+            }),
+        );
+
+        match status {
+            Ok(()) => (),
+            Err(e) => err.push(e),
         }
 
         git2::TreeWalkResult::Ok
     })?;
+
+    // TODO: ..and the other errors, if any?
+    if let Some(e) = err.into_iter().next() {
+        Err(e)?;
+    }
+
     Ok(())
 }
