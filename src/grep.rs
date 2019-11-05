@@ -20,14 +20,19 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
                 return Ok(());
             }
             let repo = git2::Repository::open(dest)?;
-            grep_in(pattern, dest, &repo)?;
+            grep_in(pattern, dest, s.html_url()?, &repo)?;
             Ok(())
         })
         .collect::<Result<_, _>>()?;
     Ok(())
 }
 
-fn grep_in(pattern: &str, prefix: &str, repo: &git2::Repository) -> Result<(), Error> {
+fn grep_in(
+    pattern: &str,
+    prefix: &str,
+    html_url: &str,
+    repo: &git2::Repository,
+) -> Result<(), Error> {
     let matcher = RegexMatcher::new(pattern)?;
     let tree_obj = repo.revparse_single("origin/REMOTE_HEAD")?.peel_to_tree()?;
     let mut err = Vec::new();
@@ -41,15 +46,16 @@ fn grep_in(pattern: &str, prefix: &str, repo: &git2::Repository) -> Result<(), E
 
         let content = object.as_blob().expect("type checked above").content();
 
+        let path = format!("{}{}", dir, entry.name().expect("blobs have names"));
+
         let status = Searcher::new().search_slice(
             &matcher,
             content,
             UTF8(|lnum, line| {
                 println!(
-                    "{}/{}{}:{}: {}",
+                    "{}/{} {}: {}",
                     prefix,
-                    dir,
-                    entry.name().expect("blobs have names"),
+                    href(&path, &format!("{}/blob/HEAD/{}#L{}", html_url, path, lnum)),
                     lnum,
                     line.trim_end()
                 );
@@ -71,4 +77,8 @@ fn grep_in(pattern: &str, prefix: &str, repo: &git2::Repository) -> Result<(), E
     }
 
     Ok(())
+}
+
+fn href(label: &str, url: &str) -> String {
+    format!("\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\", url, label)
 }

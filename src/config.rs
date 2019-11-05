@@ -25,6 +25,10 @@ impl Spec {
             .last()
             .ok_or_else(|| format_err!("empty path in {:?}", self.url))?)
     }
+
+    pub fn html_url(&self) -> Result<&str, Error> {
+        Ok(self.url.as_str())
+    }
 }
 
 pub fn load() -> Result<Vec<Spec>, Error> {
