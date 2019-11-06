@@ -1,9 +1,11 @@
 use std::path::Path;
 
+use failure::format_err;
 use failure::Error;
+use failure::ResultExt;
 use grep_matcher::Matcher;
 use grep_regex::RegexMatcher;
-use grep_searcher::sinks::UTF8;
+use grep_searcher::sinks::Lossy;
 use grep_searcher::Searcher;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -34,7 +36,10 @@ fn grep_in(
     repo: &git2::Repository,
 ) -> Result<(), Error> {
     let matcher = RegexMatcher::new(pattern)?;
-    let tree_obj = repo.revparse_single("origin/REMOTE_HEAD")?.peel_to_tree()?;
+    let tree_obj = repo
+        .revparse_single("origin/REMOTE_HEAD")
+        .with_context(|_| format_err!("looking in {:?}", prefix))?
+        .peel_to_tree()?;
     let mut err = Vec::new();
 
     tree_obj.walk(git2::TreeWalkMode::PostOrder, |dir, entry| {
@@ -51,7 +56,7 @@ fn grep_in(
         let status = Searcher::new().search_slice(
             &matcher,
             content,
-            UTF8(|lnum, line| {
+            Lossy(|lnum, line| {
                 println!(
                     "{}/{} {}: {}",
                     prefix,

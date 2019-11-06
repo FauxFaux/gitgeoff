@@ -8,6 +8,7 @@ use std::str::FromStr;
 use failure::err_msg;
 use failure::format_err;
 use failure::Error;
+use failure::ResultExt;
 use url::Url;
 
 #[derive(Clone)]
@@ -40,7 +41,15 @@ pub fn load() -> Result<Vec<Spec>, Error> {
             continue;
         }
         let mut parts = line.split(|c: char| c.is_whitespace());
-        let url = Url::from_str(parts.next().ok_or_else(|| err_msg("invalid config line"))?)?;
+        let line = parts.next().ok_or_else(|| err_msg("invalid config line"))?;
+
+        // TODO: LOL
+        if line.starts_with("git@github.com:") {
+            continue;
+        }
+
+        let url =
+            Url::from_str(line).with_context(|_| format_err!("parsing config line {:?}", line))?;
         let mut tags = HashSet::with_capacity(4);
         for tag in parts {
             tags.insert(tag.to_string());
