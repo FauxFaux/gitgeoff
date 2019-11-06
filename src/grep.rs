@@ -17,7 +17,7 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
     config::load()?
         .into_par_iter()
         .map(|s: Spec| -> Result<(), Error> {
-            let dest = s.local_dir()?;
+            let dest = s.url.local_dir()?;
             if !Path::new(dest).exists() {
                 return Ok(());
             }

@@ -14,6 +14,7 @@ use rayon::iter::ParallelIterator;
 mod cache;
 mod config;
 mod git;
+mod git_url;
 #[cfg(github)]
 mod github;
 mod grep;
@@ -21,7 +22,6 @@ mod status;
 
 use cache::Cache;
 use config::Spec;
-use git2::ErrorClass::Repository;
 
 fn main() -> Result<(), Error> {
     pretty_env_logger::formatted_builder()

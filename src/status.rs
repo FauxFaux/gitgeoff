@@ -21,7 +21,7 @@ pub fn status(update: bool) -> Result<(), Error> {
     let status: Vec<(Spec, Status)> = config::load()?
         .into_par_iter()
         .map(|spec| -> Result<_, Error> {
-            let dest = spec.local_dir()?;
+            let dest = spec.url.local_dir()?;
             let dest = Path::new(dest);
             if !dest.exists() {
                 return Ok((spec, Status::Absent));
@@ -41,7 +41,7 @@ pub fn status(update: bool) -> Result<(), Error> {
         status
             .iter()
             .filter_map(|(spec, status)| match status {
-                Status::Absent => spec.local_dir().ok(),
+                Status::Absent => spec.url.local_dir().ok(),
                 _ => None,
             })
             .collect::<Vec<&str>>()
@@ -53,7 +53,7 @@ pub fn status(update: bool) -> Result<(), Error> {
         status
             .iter()
             .filter_map(|(spec, status)| match status {
-                Status::Clean => spec.local_dir().ok(),
+                Status::Clean => spec.url.local_dir().ok(),
                 _ => None,
             })
             .collect::<Vec<&str>>()
@@ -68,7 +68,7 @@ pub fn status(update: bool) -> Result<(), Error> {
         let suffix = if changes.len() > 2 { ", ..." } else { "" };
         println!(
             "{}: ({:?}) {}{}",
-            spec.local_dir()?,
+            spec.url.local_dir()?,
             variance,
             changes.into_iter().take(2).collect::<Vec<_>>().join(", "),
             suffix
