@@ -11,6 +11,7 @@ use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
 use super::config;
+use crate::git_url::Provider;
 use config::Spec;
 
 pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
@@ -22,7 +23,7 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
                 return Ok(());
             }
             let repo = git2::Repository::open(dest)?;
-            grep_in(pattern, dest, s.html_url()?, &repo)?;
+            grep_in(pattern, dest, s.url.provider().as_ref(), &repo)?;
             Ok(())
         })
         .collect::<Result<_, _>>()?;
@@ -32,7 +33,7 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
 fn grep_in(
     pattern: &str,
     prefix: &str,
-    html_url: &str,
+    provider: Option<&Provider>,
     repo: &git2::Repository,
 ) -> Result<(), Error> {
     let matcher = RegexMatcher::new(pattern)?;
@@ -57,13 +58,10 @@ fn grep_in(
             &matcher,
             content,
             Lossy(|lnum, line| {
-                println!(
-                    "{}/{} {}: {}",
-                    prefix,
-                    href(&path, &format!("{}/blob/HEAD/{}#L{}", html_url, path, lnum)),
-                    lnum,
-                    line.trim_end()
-                );
+                let path = provider
+                    .map(|p| href(&path, &p.html_browse_path(None, &path, Some(lnum))))
+                    .unwrap_or_else(|| path.to_string());
+                println!("{}/{} {}: {}", prefix, path, lnum, line.trim_end());
                 Ok(true)
             }),
         );
