@@ -17,6 +17,20 @@ pub enum Status {
     Clean,
 }
 
+fn fetches_remote_head(repo: &git2::Repository) -> Result<bool, Error> {
+    for entry in repo
+        .config()?
+        .entries(Some("remote.origin.fetch"))?
+        .into_iter()
+    {
+        if entry?.value().unwrap_or("") == "+HEAD:refs/remotes/origin/REMOTE_HEAD" {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
+}
+
 pub fn status(update: bool) -> Result<(), Error> {
     let status: Vec<(Spec, Status)> = config::load()?
         .into_par_iter()
@@ -27,7 +41,11 @@ pub fn status(update: bool) -> Result<(), Error> {
                 return Ok((spec, Status::Absent));
             }
             let repo = git2::Repository::open(dest)?;
-            if update {
+            let configured = fetches_remote_head(&repo)?;
+            if update || !configured {
+                if !configured {
+                    repo.remote_add_fetch("origin", "+HEAD:refs/remotes/origin/REMOTE_HEAD")?;
+                }
                 git::fetch_origin_default(&repo)?;
             }
             let status = find_variance(&repo)
