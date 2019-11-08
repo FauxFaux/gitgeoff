@@ -14,7 +14,16 @@ use super::config;
 use crate::git_url::Provider;
 use config::Spec;
 
-pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
+pub(crate) fn grep(pattern: &str, globs: &[&str]) -> Result<(), Error> {
+    let globs = {
+        let mut builder = globset::GlobSetBuilder::new();
+        for &glob in globs {
+            builder.add(globset::Glob::new(glob)?);
+        }
+
+        builder.build()?
+    };
+
     config::load()?
         .into_par_iter()
         .map(|s: Spec| -> Result<(), Error> {
@@ -23,7 +32,7 @@ pub(crate) fn grep(pattern: &str) -> Result<(), Error> {
                 return Ok(());
             }
             let repo = git2::Repository::open(dest)?;
-            grep_in(pattern, dest, s.url.provider().as_ref(), &repo)?;
+            grep_in(pattern, dest, s.url.provider().as_ref(), &globs, &repo)?;
             Ok(())
         })
         .collect::<Result<_, _>>()?;
@@ -34,6 +43,7 @@ fn grep_in(
     pattern: &str,
     prefix: &str,
     provider: Option<&Provider>,
+    globs: &globset::GlobSet,
     repo: &git2::Repository,
 ) -> Result<(), Error> {
     let matcher = RegexMatcher::new(pattern)?;
@@ -53,6 +63,10 @@ fn grep_in(
         let content = object.as_blob().expect("type checked above").content();
 
         let path = format!("{}{}", dir, entry.name().expect("blobs have names"));
+
+        if !globs.is_empty() && !globs.is_match(&path) {
+            return git2::TreeWalkResult::Ok;
+        }
 
         let status = Searcher::new().search_slice(
             &matcher,

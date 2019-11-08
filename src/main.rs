@@ -45,7 +45,11 @@ fn main() -> Result<(), Error> {
         .subcommand(
             SubCommand::with_name("status").arg(Arg::with_name("update").long("update").short("u")),
         )
-        .subcommand(SubCommand::with_name("grep").arg(Arg::with_name("pattern").required(true)))
+        .subcommand(
+            SubCommand::with_name("grep")
+                .arg(Arg::with_name("pattern").required(true))
+                .arg(Arg::with_name("globs").multiple(true)),
+        )
         .setting(clap::AppSettings::SubcommandRequired)
         .get_matches();
 
@@ -55,7 +59,11 @@ fn main() -> Result<(), Error> {
         }
         ("grep", Some(args)) => {
             let pattern = args.value_of("pattern").expect("required");
-            grep::grep(pattern)?;
+            let globs = args
+                .values_of("globs")
+                .map(|v| v.collect::<Vec<&str>>())
+                .unwrap_or_default();
+            grep::grep(pattern, &globs)?;
         }
         ("update", _args) =>
         {
