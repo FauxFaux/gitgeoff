@@ -46,7 +46,8 @@ pub fn status(update: bool) -> Result<(), Error> {
                 if !configured {
                     repo.remote_add_fetch("origin", "+HEAD:refs/remotes/origin/REMOTE_HEAD")?;
                 }
-                git::fetch_origin_default(&repo)?;
+                git::fetch_origin_default(&repo)
+                    .with_context(|_| format_err!("fetching {:?} -> {:?}", spec.url, dest))?;
             }
             let status = find_variance(&repo)
                 .with_context(|_| format_err!("finding status of {:?}", dest))?;

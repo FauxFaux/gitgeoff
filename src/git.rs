@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use git2::Oid;
@@ -102,7 +103,8 @@ pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
     info!("fetching {:?} -> {:?}", url, dest);
     do_fetch(&repo, &mut origin, |p| {
         info!("{:?}: {:?}", dest, p);
-    })?;
+    })
+    .with_context(|_| format_err!("fetching {:?} -> {:?}", url, dest))?;
 
     Ok(())
 }
