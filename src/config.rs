@@ -27,7 +27,7 @@ impl Spec {
 
 pub fn load() -> Result<Vec<Spec>, Error> {
     let mut ret = Vec::with_capacity(20);
-    let file = io::BufReader::new(fs::File::open(".gitoff")?);
+    let file = io::BufReader::new(fs::File::open(".gitgeoff")?);
     for line in file.lines() {
         let line = line?;
         if line.is_empty() {
