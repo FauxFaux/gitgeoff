@@ -159,7 +159,7 @@ fn do_fetch<F: Fn(Progress)>(
     options.remote_callbacks(cb);
 
     origin
-        .fetch(&[], Some(&mut options), None)
+        .fetch(&[] as &[&str], Some(&mut options), None)
         .with_context(|_| "fetching")?;
 
     Ok(())
