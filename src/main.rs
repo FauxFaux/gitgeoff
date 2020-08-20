@@ -4,10 +4,9 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use failure::err_msg;
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Error;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
@@ -69,7 +68,7 @@ fn main() -> Result<(), Error> {
         {
             #[cfg(never)]
             git::clone_or_fetch(&src, &dest)
-                .with_context(|_| format_err!("ensure {:?} -> {:?}", src, dest))
+                .with_context(|| anyhow!("ensure {:?} -> {:?}", src, dest))
         }
         (_, _) => unreachable!("subcommand required"),
     }

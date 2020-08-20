@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Error;
 use grep_matcher::Matcher;
 use grep_regex::RegexMatcher;
 use grep_searcher::sinks::Lossy;
@@ -49,7 +49,7 @@ fn grep_in(
     let matcher = RegexMatcher::new(pattern)?;
     let tree_obj = repo
         .revparse_single("origin/REMOTE_HEAD")
-        .with_context(|_| format_err!("looking in {:?}", prefix))?
+        .with_context(|| anyhow!("looking in {:?}", prefix))?
         .peel_to_tree()?;
     let mut err = Vec::new();
 

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use failure::format_err;
-use failure::Error;
+use anyhow::anyhow;
+use anyhow::Error;
 use lazy_static::lazy_static;
 
 #[derive(Clone, Debug)]
@@ -49,13 +49,13 @@ impl GitUrl {
         let base_name = match self {
             GitUrl::Real(url) => url
                 .path_segments()
-                .ok_or_else(|| format_err!("no path in {:?}", url))?
+                .ok_or_else(|| anyhow!("no path in {:?}", url))?
                 .last()
-                .ok_or_else(|| format_err!("empty path in {:?}", url))?,
+                .ok_or_else(|| anyhow!("empty path in {:?}", url))?,
             GitUrl::Ssh(url) => strip_to_colon(&url)
                 .split('/')
                 .last()
-                .ok_or_else(|| format_err!("empty path in {:?}", url))?,
+                .ok_or_else(|| anyhow!("empty path in {:?}", url))?,
         };
 
         Ok(strip_git(&base_name))
@@ -119,7 +119,7 @@ fn strip_git(base_name: &str) -> &str {
 mod tests {
     use std::str::FromStr;
 
-    use failure::Error;
+    use anyhow::Error;
 
     use super::GitUrl;
 

@@ -3,8 +3,8 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
-use failure::err_msg;
-use failure::Error;
+use anyhow::anyhow;
+use anyhow::Error;
 
 pub struct Cache {
     root: PathBuf,
@@ -54,7 +54,7 @@ fn from_env() -> Result<PathBuf, Error> {
         return Ok(home);
     }
 
-    Err(err_msg("no HOME so couldn't find a cache dir"))
+    Err(anyhow!("no HOME so couldn't find a cache dir"))
 }
 
 fn fs_safe_component(path: &str) -> String {

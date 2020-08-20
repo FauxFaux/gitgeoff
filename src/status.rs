@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Error;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
@@ -47,10 +47,10 @@ pub fn status(update: bool) -> Result<(), Error> {
                     repo.remote_add_fetch("origin", "+HEAD:refs/remotes/origin/REMOTE_HEAD")?;
                 }
                 git::fetch_origin_default(&repo)
-                    .with_context(|_| format_err!("fetching {:?} -> {:?}", spec.url, dest))?;
+                    .with_context(|| anyhow!("fetching {:?} -> {:?}", spec.url, dest))?;
             }
-            let status = find_variance(&repo)
-                .with_context(|_| format_err!("finding status of {:?}", dest))?;
+            let status =
+                find_variance(&repo).with_context(|| anyhow!("finding status of {:?}", dest))?;
             Ok((spec, status))
         })
         .collect::<Result<_, _>>()?;

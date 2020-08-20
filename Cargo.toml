@@ -5,9 +5,9 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 edition = "2018"
 
 [dependencies]
+anyhow = "1"
 clap = "2.33"
 directories = "2.0"
-failure = "0.1"
 git2 = "0.11"
 globset = "0.4"
 grep-matcher = "0.1"

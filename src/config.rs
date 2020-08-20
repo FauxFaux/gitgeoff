@@ -5,10 +5,9 @@ use std::io::BufRead;
 use std::io::Read;
 use std::str::FromStr;
 
-use failure::err_msg;
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Error;
 use url::Url;
 
 use crate::git_url::GitUrl;
@@ -34,10 +33,10 @@ pub fn load() -> Result<Vec<Spec>, Error> {
             continue;
         }
         let mut parts = line.split(|c: char| c.is_whitespace());
-        let line = parts.next().ok_or_else(|| err_msg("invalid config line"))?;
+        let line = parts.next().ok_or_else(|| anyhow!("invalid config line"))?;
 
-        let url = GitUrl::from_str(line)
-            .with_context(|_| format_err!("parsing config line {:?}", line))?;
+        let url =
+            GitUrl::from_str(line).with_context(|| anyhow!("parsing config line {:?}", line))?;
         let mut tags = HashSet::with_capacity(4);
         for tag in parts {
             tags.insert(tag.to_string());

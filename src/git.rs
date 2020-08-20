@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Error;
 use git2::Oid;
 use git2::Remote;
 use git2::Repository;
@@ -104,7 +104,7 @@ pub fn clone_or_fetch(url: &str, dest: &Path) -> Result<(), Error> {
     do_fetch(&repo, &mut origin, |p| {
         info!("{:?}: {:?}", dest, p);
     })
-    .with_context(|_| format_err!("fetching {:?} -> {:?}", url, dest))?;
+    .with_context(|| anyhow!("fetching {:?} -> {:?}", url, dest))?;
 
     Ok(())
 }
@@ -160,7 +160,7 @@ fn do_fetch<F: Fn(Progress)>(
 
     origin
         .fetch(&[] as &[&str], Some(&mut options), None)
-        .with_context(|_| "fetching")?;
+        .with_context(|| "fetching")?;
 
     Ok(())
 }
@@ -175,7 +175,7 @@ pub fn commits_in(repo: &Repository, start: Oid, end: Oid) -> Result<usize, Erro
 #[cfg(test)]
 mod tests {
     #[test]
-    fn revwalk_direction() -> Result<(), failure::Error> {
+    fn revwalk_direction() -> Result<(), anyhow::Error> {
         let repo = git2::Repository::open(".")?;
         let two_back = repo.revparse_single("HEAD~2")?;
 
