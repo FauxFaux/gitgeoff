@@ -777,7 +777,8 @@ dependencies = [
 [[package]]
 name = "tempfile-fast"
 version = "0.3.3"
-source = "git+https://github.com/FauxFaux/tempfile-fast-rs#6191827693922a27c0998f5c7aff75f8ebfc9332"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "736781c8c7257057d9259537a1fe99d3aef8e10bd2bda849ad8bedbecdf3883e"
 dependencies = [
  "libc",
  "rand",
