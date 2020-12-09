@@ -9,26 +9,13 @@ use rayon::iter::ParallelIterator;
 use super::config;
 use super::git;
 use config::Spec;
+use super::infect;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Status {
     Absent,
     Changes(Vec<String>, git::Variance),
     Clean,
-}
-
-fn fetches_remote_head(repo: &git2::Repository) -> Result<bool, Error> {
-    for entry in repo
-        .config()?
-        .entries(Some("remote.origin.fetch"))?
-        .into_iter()
-    {
-        if entry?.value().unwrap_or("") == "+HEAD:refs/remotes/origin/REMOTE_HEAD" {
-            return Ok(true);
-        }
-    }
-
-    Ok(false)
 }
 
 pub fn status(update: bool) -> Result<(), Error> {
@@ -41,7 +28,7 @@ pub fn status(update: bool) -> Result<(), Error> {
                 return Ok((spec, Status::Absent));
             }
             let repo = git2::Repository::open(dest)?;
-            let configured = fetches_remote_head(&repo)?;
+            let configured = infect::fetches_remote_head(&repo)?;
             if update || !configured {
                 if !configured {
                     repo.remote_add_fetch("origin", "+HEAD:refs/remotes/origin/REMOTE_HEAD")?;

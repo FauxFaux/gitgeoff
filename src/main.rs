@@ -18,6 +18,7 @@ mod git_url;
 mod github;
 mod grep;
 mod status;
+mod infect;
 
 use cache::Cache;
 use config::Spec;
@@ -42,14 +43,19 @@ fn main() -> Result<(), Error> {
                 .takes_value(true),
         )
         .subcommand(
-            SubCommand::with_name("status").arg(Arg::with_name("update").long("update").short("u")),
+            SubCommand::with_name("status")
+                .about("Show the status of all child repos")
+                .arg(Arg::with_name("update").long("update").short("u")),
         )
         .subcommand(
             SubCommand::with_name("grep")
+                .about("Search for text in all child repos")
                 .arg(Arg::with_name("pattern").required(true))
                 .arg(Arg::with_name("globs").multiple(true)),
         )
-        .setting(clap::AppSettings::SubcommandRequired)
+        .subcommand(SubCommand::with_name("infect")
+            .about("Add .git/config gitgeoff depends upon"))
+        .setting(clap::AppSettings::SubcommandRequiredElseHelp)
         .get_matches();
 
     match matches.subcommand() {
@@ -63,6 +69,9 @@ fn main() -> Result<(), Error> {
                 .map(|v| v.collect::<Vec<&str>>())
                 .unwrap_or_default();
             grep::grep(pattern, &globs)?;
+        }
+        ("infect", Some(_)) => {
+            infect::infect()?;
         }
         ("update", _args) =>
         {
