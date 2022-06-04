@@ -36,7 +36,7 @@ fn main() -> Result<(), Error> {
         .arg(
             Arg::with_name("tags")
                 .long("tags")
-                .short("t")
+                .short('t')
                 .value_name("tags")
                 .required(false)
                 .multiple(true)
@@ -45,7 +45,7 @@ fn main() -> Result<(), Error> {
         .subcommand(
             SubCommand::with_name("status")
                 .about("Show the status of all child repos")
-                .arg(Arg::with_name("update").long("update").short("u")),
+                .arg(Arg::with_name("update").long("update").short('u')),
         )
         .subcommand(
             SubCommand::with_name("grep")
@@ -59,10 +59,10 @@ fn main() -> Result<(), Error> {
         .get_matches();
 
     match matches.subcommand() {
-        ("status", Some(args)) => {
+        Some(("status", args)) => {
             status::status(args.is_present("update"))?;
         }
-        ("grep", Some(args)) => {
+        Some(("grep", args)) => {
             let pattern = args.value_of("pattern").expect("required");
             let globs = args
                 .values_of("globs")
@@ -70,16 +70,17 @@ fn main() -> Result<(), Error> {
                 .unwrap_or_default();
             grep::grep(pattern, &globs)?;
         }
-        ("infect", Some(_)) => {
+        Some(("infect", _)) => {
             infect::infect()?;
         }
-        ("update", _args) =>
+        Some(("update", _args)) =>
         {
             #[cfg(never)]
             git::clone_or_fetch(&src, &dest)
                 .with_context(|| anyhow!("ensure {:?} -> {:?}", src, dest))
         }
-        (_, _) => unreachable!("subcommand required"),
+        Some((unknown_command, _args)) => unreachable!("unknown command: {:?}", unknown_command),
+        _ => unreachable!("subcommand required"),
     }
 
     Ok(())
