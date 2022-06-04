@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::io::BufRead;
-use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -10,7 +9,6 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
-use url::Url;
 
 use crate::git_url::GitUrl;
 

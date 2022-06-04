@@ -18,7 +18,6 @@ fn if_found<T>(res: Result<T, git2::Error>) -> Result<Option<T>, Error> {
 }
 
 pub fn first_statuses(repo: &git2::Repository) -> Result<Vec<String>, Error> {
-    let mut dirty = false;
     let statuses = repo.statuses(None)?;
     Ok(statuses
         .iter()

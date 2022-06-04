@@ -26,5 +26,3 @@ pub fn fetches_remote_head(repo: &git2::Repository) -> Result<bool> {
 
     Ok(false)
 }
-
-

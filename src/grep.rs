@@ -3,7 +3,6 @@ use std::path::Path;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
-use grep_matcher::Matcher;
 use grep_regex::RegexMatcher;
 use grep_searcher::sinks::Lossy;
 use grep_searcher::Searcher;

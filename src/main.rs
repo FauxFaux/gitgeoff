@@ -1,14 +1,6 @@
 use std::env;
-use std::fs;
-use std::io;
-use std::path::Path;
-use std::path::PathBuf;
 
-use anyhow::anyhow;
-use anyhow::Context;
 use anyhow::Error;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 
 mod cache;
 mod config;
@@ -17,45 +9,43 @@ mod git_url;
 #[cfg(github)]
 mod github;
 mod grep;
-mod status;
 mod infect;
+mod status;
 
 use cache::Cache;
-use config::Spec;
 
 fn main() -> Result<(), Error> {
     pretty_env_logger::formatted_builder()
         .filter_level(log::LevelFilter::Info)
         .init();
 
-    let cache = Cache::new()?;
+    let _cache = Cache::new()?;
 
     use clap::Arg;
-    use clap::SubCommand;
-    let matches = clap::App::new(clap::crate_name!())
+    use clap::Command;
+    let matches = clap::command!()
         .arg(
-            Arg::with_name("tags")
+            Arg::new("tags")
                 .long("tags")
                 .short('t')
                 .value_name("tags")
                 .required(false)
-                .multiple(true)
+                .multiple_occurrences(true)
                 .takes_value(true),
         )
         .subcommand(
-            SubCommand::with_name("status")
+            Command::new("status")
                 .about("Show the status of all child repos")
-                .arg(Arg::with_name("update").long("update").short('u')),
+                .arg(Arg::new("update").long("update").short('u')),
         )
         .subcommand(
-            SubCommand::with_name("grep")
+            Command::new("grep")
                 .about("Search for text in all child repos")
-                .arg(Arg::with_name("pattern").required(true))
-                .arg(Arg::with_name("globs").multiple(true)),
+                .arg(Arg::new("pattern").required(true))
+                .arg(Arg::new("globs").multiple_occurrences(true)),
         )
-        .subcommand(SubCommand::with_name("infect")
-            .about("Add .git/config gitgeoff depends upon"))
-        .setting(clap::AppSettings::SubcommandRequiredElseHelp)
+        .subcommand(Command::new("infect").about("Add .git/config gitgeoff depends upon"))
+        .subcommand_required(true)
         .get_matches();
 
     match matches.subcommand() {

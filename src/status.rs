@@ -8,8 +8,8 @@ use rayon::iter::ParallelIterator;
 
 use super::config;
 use super::git;
-use config::Spec;
 use super::infect;
+use config::Spec;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Status {
