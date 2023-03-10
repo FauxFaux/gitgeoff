@@ -1,6 +1,7 @@
 use std::env;
 
 use anyhow::Error;
+use clap::ArgAction;
 
 mod cache;
 mod config;
@@ -30,19 +31,23 @@ fn main() -> Result<(), Error> {
                 .short('t')
                 .value_name("tags")
                 .required(false)
-                .multiple_occurrences(true)
-                .takes_value(true),
+                .num_args(..),
         )
         .subcommand(
             Command::new("status")
                 .about("Show the status of all child repos")
-                .arg(Arg::new("update").long("update").short('u')),
+                .arg(
+                    Arg::new("update")
+                        .long("update")
+                        .short('u')
+                        .action(ArgAction::SetTrue),
+                ),
         )
         .subcommand(
             Command::new("grep")
                 .about("Search for text in all child repos")
                 .arg(Arg::new("pattern").required(true))
-                .arg(Arg::new("globs").multiple_occurrences(true)),
+                .arg(Arg::new("globs").num_args(1..)),
         )
         .subcommand(Command::new("infect").about("Add .git/config gitgeoff depends upon"))
         .subcommand_required(true)
@@ -50,13 +55,13 @@ fn main() -> Result<(), Error> {
 
     match matches.subcommand() {
         Some(("status", args)) => {
-            status::status(args.is_present("update"))?;
+            status::status(args.get_flag("update"))?;
         }
         Some(("grep", args)) => {
-            let pattern = args.value_of("pattern").expect("required");
+            let pattern = args.get_one::<String>("pattern").expect("required");
             let globs = args
-                .values_of("globs")
-                .map(|v| v.collect::<Vec<&str>>())
+                .get_many::<String>("globs")
+                .map(|v| v.into_iter().collect::<Vec<&String>>())
                 .unwrap_or_default();
             grep::grep(pattern, &globs)?;
         }

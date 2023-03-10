@@ -13,7 +13,7 @@ use super::config;
 use crate::git_url::Provider;
 use config::Spec;
 
-pub fn grep(pattern: &str, globs: &[&str]) -> Result<(), Error> {
+pub fn grep(pattern: &str, globs: &[&String]) -> Result<(), Error> {
     let globs = {
         let mut builder = globset::GlobSetBuilder::new();
         for &glob in globs {
