@@ -14,11 +14,9 @@ fn add_if_missing(repo: &git2::Repository) -> Result<()> {
 }
 
 pub fn fetches_remote_head(repo: &git2::Repository) -> Result<bool> {
-    for entry in repo
-        .config()?
-        .entries(Some("remote.origin.fetch"))?
-        .into_iter()
-    {
+    let config = repo.config()?;
+    let mut entries = config.entries(Some("remote.origin.fetch"))?;
+    while let Some(entry) = entries.next() {
         if entry?.value().unwrap_or("") == "+HEAD:refs/remotes/origin/REMOTE_HEAD" {
             return Ok(true);
         }
