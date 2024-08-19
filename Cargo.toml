@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1"
 clap = { version = "4", features = ["cargo"] }
 directories = "5"
-git2 = "0.18"
+git2 = "0.19"
 globset = "0.4"
 grep-matcher = "0.1"
 grep-regex = "0.1"
