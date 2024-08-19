@@ -25,7 +25,7 @@ pub fn grep(pattern: &str, globs: &[&String]) -> Result<(), Error> {
 
     config::load()?
         .into_par_iter()
-        .map(|s: Spec| -> Result<(), Error> {
+        .try_for_each(|s: Spec| -> Result<(), Error> {
             let dest = s.url.local_dir()?;
             if !Path::new(dest).exists() {
                 return Ok(());
@@ -33,8 +33,7 @@ pub fn grep(pattern: &str, globs: &[&String]) -> Result<(), Error> {
             let repo = git2::Repository::open(dest)?;
             grep_in(pattern, dest, s.url.provider().as_ref(), &globs, &repo)?;
             Ok(())
-        })
-        .collect::<Result<_, _>>()?;
+        })?;
     Ok(())
 }
 
